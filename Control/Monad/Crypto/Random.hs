@@ -110,16 +110,17 @@ crandomR_Num (low, high) g
       | otherwise = go g
       where
       mask    = foldl' setBit 0 [0 .. fromIntegral nrBits - 1]
-      nrBits  = base2Log (fromIntegral range)
-      range   = high - low + 1
+      nrBits  = base2Log range
+      range :: Integer
+      range   = (fromIntegral high) - (fromIntegral low) + 1
       nrBytes = (nrBits + 7) `div` 8
       go gen =
         let offset = genBytes (fromIntegral nrBytes) gen
-	in case offset of
-	Left err -> Left err
-	Right (bs, g') ->
-		let res = fromIntegral $ fromIntegral low + (bs2i bs .&. mask)
-		in if res > high then go g' else Right (res, g')
+        in case offset of
+        Left err -> Left err
+        Right (bs, g') ->
+                let res = fromIntegral $ fromIntegral low + (bs2i bs .&. mask)
+                in if res > high then go g' else Right (res, g')
 
 wrap :: (Monad m) => (g -> Either GenError (a,g)) -> CRandT g m a
 wrap f = CRandT $ do
