@@ -10,13 +10,15 @@ provides plumbing for the CryptoRandomGen generators.
 -}
  
 module Control.Monad.Crypto.Random
-	( CRandom(..)
+        ( CRandom(..)
         , MonadCryptoRandom(..)
         , CRandT
         , CRand
         , runCRandT
+        , evalCRandT
         , runCRand
-	) where
+        , evalCRand
+        ) where
 
 import Crypto.Random (CryptoRandomGen(..), GenError(..))
 import qualified Data.ByteString as B
@@ -24,6 +26,8 @@ import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
 import Data.List (foldl')
 import Data.Word
 import Data.Int
+import Control.Arrow (right)
+import Control.Monad (liftM)
 import Control.Monad.Identity
 import Control.Monad.Error
 import Control.Monad.State
@@ -32,9 +36,9 @@ import Control.Monad.State
 -- random values (or fail with a 'GenError').  It is suggestd
 -- you use the 'CRandT' transformer in your monad stack.
 class (MonadError GenError m) => MonadCryptoRandom m where
-        getCRandom  :: CRandom a => m a
-	getCRandomR :: CRandom a => (a,a) -> m a
-	getBytes    :: Int -> m B.ByteString
+        getCRandom   :: CRandom a => m a
+        getCRandomR  :: CRandom a => (a,a) -> m a
+        getBytes     :: Int -> m B.ByteString
         getBytesWithEntropy :: Int -> B.ByteString -> m B.ByteString
         doReseed :: B.ByteString -> m ()
 
@@ -50,9 +54,19 @@ class (MonadError GenError m) => MonadCryptoRandom m where
 -- 
 -- The 'crandomR' function has degraded (theoretically unbounded, probabilitically decent) performance
 -- the closer your range size (high - low) is to 2^n (from the top).
-class (Ord a) => CRandom a where
-    crandom  :: (CryptoRandomGen g) => g -> Either GenError (a, g)
-    crandomR :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
+class CRandom a where
+    crandom   :: (CryptoRandomGen g) => g -> Either GenError (a, g)
+    crandomR  :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
+    crandoms  :: (CryptoRandomGen g) => g -> [a]
+    crandoms g =
+        case crandom g of
+                Left _       -> []
+                Right (a,g') -> a : crandoms g'
+    crandomRs :: (CryptoRandomGen g) => (a, a) -> g -> [a]
+    crandomRs r g =
+        case crandomR r g of
+                Left _       -> []
+                Right (a,g') -> a : crandomRs r g'
 
 instance CRandom Integer where
    crandom = crandomR ((-(2^256)), 2^256)
