@@ -154,12 +154,18 @@ type CRand g = CRandT g Identity
 runCRandT :: CRandT g m a -> g -> m (Either GenError (a,g))
 runCRandT m g = runErrorT . flip runStateT g . unCRandT $ m
 
-runCRand :: CRandT g Identity a -> g -> Either GenError (a, g)
+evalCRandT :: Monad m => CRandT g m a -> g -> m (Either GenError a)
+evalCRandT m g = liftM (right fst) (runCRandT m g)
+
+runCRand :: CRand g a -> g -> Either GenError (a, g)
 runCRand m = runIdentity . runCRandT m
 
+evalCRand :: CRand g a -> g -> Either GenError a
+evalCRand m = runIdentity . evalCRandT m
+
 instance (Monad m, CryptoRandomGen g) => MonadCryptoRandom (CRandT g m) where
-	getCRandom    = wrap crandom
-	getCRandomR r = wrap (crandomR r)
+        getCRandom  = wrap crandom
+        getCRandomR = wrap . crandomR
         getBytes i = wrap (genBytes i)
         getBytesWithEntropy i e = wrap (genBytesWithEntropy i e)
         doReseed bs = CRandT $ do
