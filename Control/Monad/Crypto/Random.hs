@@ -55,7 +55,7 @@ class (Ord a) => CRandom a where
     crandomR :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
 
 instance CRandom Integer where
-   crandom = crandomR (2^(-256), 2^256)
+   crandom = crandomR ((-(2^256)), 2^256)
    crandomR = crandomR_Num
 
 instance CRandom Int where
