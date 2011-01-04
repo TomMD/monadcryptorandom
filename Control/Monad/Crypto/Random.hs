@@ -52,7 +52,7 @@ class (MonadError GenError m) => MonadCryptoRandom m where
 -- Provided instances for @crandom g@ generates randoms between the bounds and between +/- 2^256
 -- for Integer.
 -- 
--- The 'crandomR' function has degraded (theoretically unbounded, probabilitically decent) performance
+-- The 'crandomR' function has degraded (theoretically unbounded, probabilistically decent) performance
 -- the closer your range size (high - low) is to 2^n (from the top).
 class CRandom a where
     crandom   :: (CryptoRandomGen g) => g -> Either GenError (a, g)
@@ -132,18 +132,20 @@ wrap f = CRandT $ do
 -- |CRandT is the transformer suggested for MonadCryptoRandom.
 newtype CRandT g m a = CRandT { unCRandT :: StateT g (ErrorT GenError m) a } deriving (MonadError GenError, Monad)
 
+instance MonadTrans (CRandT g) where
+	lift = CRandT . lift . lift
+
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
 -- below for a simple use of 'newGenIO' (from "crypto-api"),
 -- 'getCRandom', 'getBytes', and 'runCRandom'.
 --
--- @
---   getRandPair = do
---         int <- getCRandom
---         bytes <- getBytes 100
---         return (int, bytes)
+-- @getRandPair = do
+--   int <- getCRandom
+--   bytes <- getBytes 100
+--   return (int, bytes)
 --
---  func =
+--  func = do
 --   g <- newGenIO
 --   case runCRand getRandPair g of
 --       Right ((int,bytes), g') -> useRandomVals (int,bytes)
