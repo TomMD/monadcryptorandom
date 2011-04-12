@@ -23,4 +23,4 @@ Library
                  mtl >= 2.0, crypto-api >= 0.2, transformers >= 0.2
   ghc-options:
   hs-source-dirs:
-  exposed-modules: Control.Monad.Crypto.Random
+  exposed-modules: Control.Monad.CryptoRandom
