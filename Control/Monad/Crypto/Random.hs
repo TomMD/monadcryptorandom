@@ -31,6 +31,7 @@ import Control.Monad (liftM)
 import Control.Monad.Identity
 import Control.Monad.Error
 import Control.Monad.State
+import Control.Monad.IO.Class
 
 -- |@MonadCryptoRandom m@ represents a monad that can produce
 -- random values (or fail with a 'GenError').  It is suggestd
@@ -130,7 +131,7 @@ wrap f = CRandT $ do
                 Left x -> throwError x
 
 -- |CRandT is the transformer suggested for MonadCryptoRandom.
-newtype CRandT g m a = CRandT { unCRandT :: StateT g (ErrorT GenError m) a } deriving (MonadError GenError, Monad)
+newtype CRandT g m a = CRandT { unCRandT :: StateT g (ErrorT GenError m) a } deriving (MonadError GenError, Monad, MonadIO)
 
 instance MonadTrans (CRandT g) where
 	lift = CRandT . lift . lift
