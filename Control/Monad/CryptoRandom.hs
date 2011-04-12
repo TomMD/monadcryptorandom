@@ -12,7 +12,7 @@ provides plumbing for the CryptoRandomGen generators.
 module Control.Monad.CryptoRandom
         ( CRandom(..)
         , MonadCryptoRandom(..)
-	, ContainsGenError
+	, ContainsGenError(..)
         , CRandT
         , CRand
         , runCRandT
