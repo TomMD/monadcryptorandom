@@ -143,7 +143,7 @@ wrap f = CRandT $ do
 -- |CRandT is the transformer suggested for MonadCryptoRandom.
 newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
 
-instance (Functor m,Monad m) => Applicative (CRandT g m) where
+instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
   pure = return
   (<*>) = ap
 
