@@ -21,18 +21,19 @@ module Control.Monad.CryptoRandom
         , evalCRand
         ) where
 
-import Crypto.Random (CryptoRandomGen(..), GenError(..))
-import qualified Data.ByteString as B
-import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
-import Data.List (foldl')
-import Data.Word
-import Data.Int
+import Control.Applicative
 import Control.Arrow (right, left)
 import Control.Monad (liftM)
-import Control.Monad.Identity
 import Control.Monad.Error
-import Control.Monad.State
 import Control.Monad.IO.Class
+import Control.Monad.Identity
+import Control.Monad.State
+import Crypto.Random (CryptoRandomGen(..), GenError(..))
+import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
+import Data.Int
+import Data.List (foldl')
+import Data.Word
+import qualified Data.ByteString as B
 
 -- |@MonadCryptoRandom m@ represents a monad that can produce
 -- random values (or fail with a 'GenError').  It is suggestd
@@ -140,7 +141,11 @@ wrap f = CRandT $ do
                 Left x -> throwError (fromGenError x)
 
 -- |CRandT is the transformer suggested for MonadCryptoRandom.
-newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO)
+newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
+
+instance (Functor m,Monad m) => Applicative (CRandT g m) where
+  pure = return
+  (<*>) = ap
 
 instance (Error e) => MonadTrans (CRandT g e) where
 	lift = CRandT . lift . lift
