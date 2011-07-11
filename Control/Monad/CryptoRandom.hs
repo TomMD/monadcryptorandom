@@ -11,7 +11,10 @@ provides plumbing for the CryptoRandomGen generators.
  
 module Control.Monad.CryptoRandom
         ( CRandom(..)
-        , MonadCryptoRandom(..)
+	, CRandomR(..)
+        , MonadCRandom(..)
+        , MonadCRandomR(..)
+--        , MonadCRand
 	, ContainsGenError(..)
         , CRandT
         , CRand
@@ -35,15 +38,21 @@ import Data.List (foldl')
 import Data.Word
 import qualified Data.ByteString as B
 
--- |@MonadCryptoRandom m@ represents a monad that can produce
--- random values (or fail with a 'GenError').  It is suggestd
+-- |@MonadCRandom m@ represents a monad that can produce
+-- random values (or fail with a 'GenError').  It is suggested
 -- you use the 'CRandT' transformer in your monad stack.
-class (ContainsGenError e, MonadError e m) => MonadCryptoRandom e m where
+class (ContainsGenError e, MonadError e m) => MonadCRandom e m where
         getCRandom   :: CRandom a => m a
-        getCRandomR  :: CRandom a => (a,a) -> m a
         getBytes     :: Int -> m B.ByteString
         getBytesWithEntropy :: Int -> B.ByteString -> m B.ByteString
         doReseed :: B.ByteString -> m ()
+
+class (ContainsGenError e, MonadError e m) => MonadCRandomR e m where
+        getCRandomR  :: CRandomR a => (a,a) -> m a
+
+-- |A superclass including MonadCRandom and MonadCRandomR
+--class (MonadCRandom e m, MonadCRandomR e m) => MonadCRand e m
+--instance (MonadCRandom e m, MonadCRandomR e m) => MonadCRand e m
 
 class ContainsGenError e where
 	toGenError :: e -> Maybe GenError
@@ -67,53 +76,76 @@ instance ContainsGenError GenError where
 -- the closer your range size (high - low) is to 2^n (from the top).
 class CRandom a where
     crandom   :: (CryptoRandomGen g) => g -> Either GenError (a, g)
-    crandomR  :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
     crandoms  :: (CryptoRandomGen g) => g -> [a]
     crandoms g =
         case crandom g of
                 Left _       -> []
                 Right (a,g') -> a : crandoms g'
+
+class CRandomR a where
+    crandomR  :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
     crandomRs :: (CryptoRandomGen g) => (a, a) -> g -> [a]
     crandomRs r g =
         case crandomR r g of
                 Left _       -> []
                 Right (a,g') -> a : crandomRs r g'
 
-instance CRandom Integer where
-   crandom = crandomR ((-(2^256)), 2^256)
+instance CRandomR Integer where
    crandomR = crandomR_Num
 
 instance CRandom Int where
     crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Int where
     crandomR = crandomR_Num
 
 instance CRandom Word8 where
     crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Word8 where
     crandomR = crandomR_Num
+
 instance CRandom Word16 where
     crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Word16 where
     crandomR = crandomR_Num
+
 instance CRandom Word32 where
     crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Word32 where
     crandomR = crandomR_Num
+
 instance CRandom Word64 where
     crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Word64 where
     crandomR = crandomR_Num
 
 instance CRandom Int8 where
     crandom = crandomR (minBound, maxBound)
-    crandomR = crandomR_Num
-instance CRandom Int16 where
-    crandom = crandomR (minBound, maxBound)
-    crandomR = crandomR_Num
-instance CRandom Int32 where
-    crandom = crandomR (minBound, maxBound)
-    crandomR = crandomR_Num
-instance CRandom Int64 where
-    crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Int8 where
     crandomR = crandomR_Num
 
--- FIXME specialize
+instance CRandom Int16 where
+    crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Int16 where
+    crandomR = crandomR_Num
+
+instance CRandom Int32 where
+    crandom = crandomR (minBound, maxBound)
+
+instance CRandomR Int32 where
+    crandomR = crandomR_Num
+
+instance CRandom Int64 where
+    crandom = crandomR (minBound, maxBound)
+instance CRandomR Int64 where
+    crandomR = crandomR_Num
+
 crandomR_Num :: (Integral a, CryptoRandomGen g) => (a,a) -> g -> Either GenError (a,g)
 crandomR_Num (low, high) g
       | high < low = crandomR_Num  (high,low) g
@@ -132,6 +164,7 @@ crandomR_Num (low, high) g
         Right (bs, g') ->
                 let res = fromIntegral $ fromIntegral low + (bs2i bs .&. mask)
                 in if res > high then go g' else Right (res, g')
+{-# INLINE crandomR_Num #-}
 
 wrap :: (Monad m, ContainsGenError e, Error e) => (g -> Either GenError (a,g)) -> CRandT g e m a
 wrap f = CRandT $ do
@@ -140,7 +173,7 @@ wrap f = CRandT $ do
                 Right (a,g') -> put g' >> return a
                 Left x -> throwError (fromGenError x)
 
--- |CRandT is the transformer suggested for MonadCryptoRandom.
+-- |CRandT is the transformer suggested for MonadCRandom.
 newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
 
 instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
@@ -180,9 +213,8 @@ runCRand m = runIdentity . runCRandT m
 evalCRand :: CRand g GenError a -> g -> Either GenError a
 evalCRand m = runIdentity . evalCRandT m
 
-instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCryptoRandom e (CRandT g e m) where
+instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandom e (CRandT g e m) where
         getCRandom  = wrap crandom
-        getCRandomR = wrap . crandomR
         getBytes i = wrap (genBytes i)
         getBytesWithEntropy i e = wrap (genBytesWithEntropy i e)
         doReseed bs = CRandT $ do
@@ -190,6 +222,9 @@ instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCrypt
                          case reseed bs g of
                             Right g' -> put g'
                             Left  x  -> throwError (fromGenError x)
+
+instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandomR e (CRandT g e m) where
+        getCRandomR = wrap . crandomR
 
 instance Error GenError where
         noMsg = GenErrorOther "noMsg"
