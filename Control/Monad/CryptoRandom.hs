@@ -162,8 +162,8 @@ crandomR_Num (low, high) g
         in case offset of
         Left err -> Left err
         Right (bs, g') ->
-                let res = fromIntegral $ fromIntegral low + (bs2i bs .&. mask)
-                in if res > high then go g' else Right (res, g')
+		let res = fromIntegral low + (bs2i bs .&. mask)
+		in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
 {-# INLINE crandomR_Num #-}
 
 wrap :: (Monad m, ContainsGenError e, Error e) => (g -> Either GenError (a,g)) -> CRandT g e m a
