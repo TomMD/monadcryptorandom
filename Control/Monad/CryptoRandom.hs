@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts
+  , GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 {-|
   Maintainer: Thomas.DuBuisson@gmail.com
   Stability: beta
@@ -22,6 +23,7 @@ module Control.Monad.CryptoRandom
         , evalCRandT
         , runCRand
         , evalCRand
+        , module Crypto.Random
         ) where
 
 import Control.Applicative
@@ -36,6 +38,7 @@ import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
 import Data.Int
 import Data.List (foldl')
 import Data.Word
+import Data.Proxy
 import qualified Data.ByteString as B
 
 -- |@MonadCRandom m@ represents a monad that can produce
@@ -46,6 +49,19 @@ class (ContainsGenError e, MonadError e m) => MonadCRandom e m where
         getBytes     :: Int -> m B.ByteString
         getBytesWithEntropy :: Int -> B.ByteString -> m B.ByteString
         doReseed :: B.ByteString -> m ()
+
+newGenCRand :: (CryptoRandomGen g, MonadCRandom GenError m, Functor m) => m g
+newGenCRand = go 0
+  where
+  go 1000 = throwError (GenErrorOther "The generator instance requested by newGenCRand never instantiates.")
+  go i = do let p = Proxy
+                getTypedGen :: (Functor m, CryptoRandomGen g, MonadCRandom GenError m)
+                            => Proxy g -> m (Either GenError g)
+                getTypedGen pr = fmap newGen (getBytes $ proxy genSeedLength pr)
+            res <- getTypedGen p 
+            case res of
+                Left _  -> go (i+1)
+                Right g -> return (g `asProxyTypeOf` p)
 
 class (ContainsGenError e, MonadError e m) => MonadCRandomR e m where
         getCRandomR  :: CRandomR a => (a,a) -> m a
