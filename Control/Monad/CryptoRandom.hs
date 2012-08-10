@@ -12,17 +12,17 @@ provides plumbing for the CryptoRandomGen generators.
  
 module Control.Monad.CryptoRandom
         ( CRandom(..)
-	, CRandomR(..)
+        , CRandomR(..)
         , MonadCRandom(..)
         , MonadCRandomR(..)
---        , MonadCRand
-	, ContainsGenError(..)
+        , ContainsGenError(..)
         , CRandT
         , CRand
         , runCRandT
         , evalCRandT
         , runCRand
         , evalCRand
+        , newGenCRand
         , module Crypto.Random
         ) where
 
@@ -66,17 +66,13 @@ newGenCRand = go 0
 class (ContainsGenError e, MonadError e m) => MonadCRandomR e m where
         getCRandomR  :: CRandomR a => (a,a) -> m a
 
--- |A superclass including MonadCRandom and MonadCRandomR
---class (MonadCRandom e m, MonadCRandomR e m) => MonadCRand e m
---instance (MonadCRandom e m, MonadCRandomR e m) => MonadCRand e m
-
 class ContainsGenError e where
-	toGenError :: e -> Maybe GenError
-	fromGenError :: GenError -> e
+        toGenError :: e -> Maybe GenError
+        fromGenError :: GenError -> e
 
 instance ContainsGenError GenError where
-	toGenError = Just
-	fromGenError = id
+        toGenError = Just
+        fromGenError = id
 
 -- |@CRandom a@ is much like the 'Random' class from the "System.Random" module in the "random" package.
 -- The main difference is CRandom builds on "crypto-api"'s 'CryptoRandomGen', so it allows
@@ -178,8 +174,8 @@ crandomR_Num (low, high) g
         in case offset of
         Left err -> Left err
         Right (bs, g') ->
-		let res = fromIntegral low + (bs2i bs .&. mask)
-		in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
+                let res = fromIntegral low + (bs2i bs .&. mask)
+                in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
 {-# INLINE crandomR_Num #-}
 
 wrap :: (Monad m, ContainsGenError e, Error e) => (g -> Either GenError (a,g)) -> CRandT g e m a
@@ -197,7 +193,7 @@ instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
   (<*>) = ap
 
 instance (Error e) => MonadTrans (CRandT g e) where
-	lift = CRandT . lift . lift
+        lift = CRandT . lift . lift
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
