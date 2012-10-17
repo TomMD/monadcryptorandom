@@ -1,5 +1,5 @@
 name:           monadcryptorandom
-version:        0.5.0.1
+version:        0.5
 license:        BSD3
 license-file:   LICENSE
 copyright:      Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -8,8 +8,7 @@ maintainer:     Thomas DuBuisson <thomas.dubuisson@gmail.com>
 description:    A monad for using CryptoRandomGen
 synopsis:       A monad for using CryptoRandomGen
 category:       Control, Cryptography
-homepage:       http://trac.haskell.org/crypto-api/wiki
-bug-reports:    http://trac.haskell.org/crypto-api/report/1
+homepage:       https://github.com/TomMD/monadcryptorandom
 stability:      stable
 build-type:     Simple
 cabal-version:  >= 1.6
@@ -25,3 +24,8 @@ Library
   ghc-options:
   hs-source-dirs:
   exposed-modules: Control.Monad.CryptoRandom
+
+source-repository head
+  type:     git
+  location: https://github.com/TomMD/monadcryptorandom
+
