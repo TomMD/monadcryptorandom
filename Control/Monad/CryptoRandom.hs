@@ -32,6 +32,7 @@ import Control.Monad (liftM)
 import Control.Monad.Error
 import Control.Monad.IO.Class
 import Control.Monad.Identity
+import Control.Monad.Reader.Class
 import Control.Monad.State
 import Crypto.Random (CryptoRandomGen(..), GenError(..))
 import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
@@ -198,6 +199,10 @@ instance (Error e) => MonadTrans (CRandT g e) where
 instance (MonadState s m, Error e) => MonadState s (CRandT g e m) where
   get = lift get
   put = lift . put
+
+instance (MonadReader r m, Error e) => MonadReader r (CRandT g e m) where
+  ask = lift ask
+  local f = CRandT . local f . unCRandT
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
