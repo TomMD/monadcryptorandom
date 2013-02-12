@@ -3,13 +3,13 @@
 {-|
   Maintainer: Thomas.DuBuisson@gmail.com
   Stability: beta
-  Portability: portable 
+  Portability: portable
 
 Much like the "MonadRandom" package ("Control.Monad.Random"), this module
 provides plumbing for the CryptoRandomGen generators.
 
 -}
- 
+
 module Control.Monad.CryptoRandom
         ( CRandom(..)
         , CRandomR(..)
@@ -60,7 +60,7 @@ newGenCRand = go 0
                 getTypedGen :: (Functor m, CryptoRandomGen g, MonadCRandom GenError m)
                             => Proxy g -> m (Either GenError g)
                 getTypedGen pr = fmap newGen (getBytes $ proxy genSeedLength pr)
-            res <- getTypedGen p 
+            res <- getTypedGen p
             case res of
                 Left _  -> go (i+1)
                 Right g -> return (g `asProxyTypeOf` p)
@@ -85,7 +85,7 @@ instance ContainsGenError GenError where
 --
 -- Provided instances for @crandom g@ generates randoms between the bounds and between +/- 2^256
 -- for Integer.
--- 
+--
 -- The 'crandomR' function has degraded (theoretically unbounded, probabilistically decent) performance
 -- the closer your range size (high - low) is to 2^n (from the top).
 class CRandom a where
