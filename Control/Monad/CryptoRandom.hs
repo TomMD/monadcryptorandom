@@ -11,20 +11,20 @@ provides plumbing for the CryptoRandomGen generators.
 -}
 
 module Control.Monad.CryptoRandom
-        ( CRandom(..)
-        , CRandomR(..)
-        , MonadCRandom(..)
-        , MonadCRandomR(..)
-        , ContainsGenError(..)
-        , CRandT
-        , CRand
-        , runCRandT
-        , evalCRandT
-        , runCRand
-        , evalCRand
-        , newGenCRand
-        , module Crypto.Random
-        ) where
+  ( CRandom(..)
+  , CRandomR(..)
+  , MonadCRandom(..)
+  , MonadCRandomR(..)
+  , ContainsGenError(..)
+  , CRandT
+  , CRand
+  , runCRandT
+  , evalCRandT
+  , runCRand
+  , evalCRand
+  , newGenCRand
+  , module Crypto.Random
+  ) where
 
 import Control.Applicative
 import Control.Arrow (right, left)
@@ -142,15 +142,15 @@ newGenCRand = go 0
                 Right g -> return (g `asProxyTypeOf` p)
 
 class (ContainsGenError e, MonadError e m) => MonadCRandomR e m where
-        getCRandomR  :: CRandomR a => (a,a) -> m a
+  getCRandomR  :: CRandomR a => (a,a) -> m a
 
 class ContainsGenError e where
-        toGenError :: e -> Maybe GenError
-        fromGenError :: GenError -> e
+  toGenError :: e -> Maybe GenError
+  fromGenError :: GenError -> e
 
 instance ContainsGenError GenError where
-        toGenError = Just
-        fromGenError = id
+  toGenError = Just
+  fromGenError = id
 
 -- |@CRandom a@ is much like the 'Random' class from the "System.Random" module in the "random" package.
 -- The main difference is CRandom builds on "crypto-api"'s 'CryptoRandomGen', so it allows
@@ -165,20 +165,20 @@ instance ContainsGenError GenError where
 -- The 'crandomR' function has degraded (theoretically unbounded, probabilistically decent) performance
 -- the closer your range size (high - low) is to 2^n (from the top).
 class CRandom a where
-    crandom   :: (CryptoRandomGen g) => g -> Either GenError (a, g)
-    crandoms  :: (CryptoRandomGen g) => g -> [a]
-    crandoms g =
-        case crandom g of
-                Left _       -> []
-                Right (a,g') -> a : crandoms g'
+  crandom   :: (CryptoRandomGen g) => g -> Either GenError (a, g)
+  crandoms  :: (CryptoRandomGen g) => g -> [a]
+  crandoms g =
+    case crandom g of
+      Left _       -> []
+      Right (a,g') -> a : crandoms g'
 
 class CRandomR a where
-    crandomR  :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
-    crandomRs :: (CryptoRandomGen g) => (a, a) -> g -> [a]
-    crandomRs r g =
-        case crandomR r g of
-                Left _       -> []
-                Right (a,g') -> a : crandomRs r g'
+  crandomR  :: (CryptoRandomGen g) => (a, a) -> g -> Either GenError (a, g)
+  crandomRs :: (CryptoRandomGen g) => (a, a) -> g -> [a]
+  crandomRs r g =
+    case crandomR r g of
+      Left _       -> []
+      Right (a,g') -> a : crandomRs r g'
 
 instance CRandomR Integer where
   crandomR = crandomR_Num
@@ -258,30 +258,30 @@ instance CRandomR Int64 where
 
 crandomR_Num :: (Integral a, CryptoRandomGen g) => (a,a) -> g -> Either GenError (a,g)
 crandomR_Num (low, high) g
-      | high < low = crandomR_Num  (high,low) g
-      | high == low = Right (high, g)
-      | otherwise = go g
-      where
-      mask    = foldl' setBit 0 [0 .. fromIntegral nrBits - 1]
-      nrBits  = base2Log range
-      range :: Integer
-      range   = (fromIntegral high) - (fromIntegral low) + 1
-      nrBytes = (nrBits + 7) `div` 8
-      go gen =
-        let offset = genBytes (fromIntegral nrBytes) gen
-        in case offset of
-        Left err -> Left err
-        Right (bs, g') ->
-                let res = fromIntegral low + (bs2i bs .&. mask)
-                in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
+  | high < low = crandomR_Num  (high,low) g
+  | high == low = Right (high, g)
+  | otherwise = go g
+  where
+  mask    = foldl' setBit 0 [0 .. fromIntegral nrBits - 1]
+  nrBits  = base2Log range
+  range :: Integer
+  range   = (fromIntegral high) - (fromIntegral low) + 1
+  nrBytes = (nrBits + 7) `div` 8
+  go gen =
+    let offset = genBytes (fromIntegral nrBytes) gen
+    in case offset of
+    Left err -> Left err
+    Right (bs, g') ->
+      let res = fromIntegral low + (bs2i bs .&. mask)
+      in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
 {-# INLINE crandomR_Num #-}
 
 wrap :: (Monad m, ContainsGenError e, Error e) => (g -> Either GenError (a,g)) -> CRandT g e m a
 wrap f = CRandT $ do
-        g <- get
-        case f g of
-                Right (a,g') -> put g' >> return a
-                Left x -> throwError (fromGenError x)
+  g <- get
+  case f g of
+    Right (a,g') -> put g' >> return a
+    Left x -> throwError (fromGenError x)
 {-# INLINE wrap #-}
 
 -- |CRandT is the transformer suggested for MonadCRandom.
@@ -356,35 +356,35 @@ evalCRand m = runIdentity . evalCRandT m
 {-# INLINE evalCRand #-}
 
 instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandom e (CRandT g e m) where
-        getCRandom  = wrap crandom
-        {-# INLINE getCRandom #-}
-        getBytes i = wrap (genBytes i)
-        {-# INLINE getBytes #-}
-        getBytesWithEntropy i e = wrap (genBytesWithEntropy i e)
-        {-# INLINE getBytesWithEntropy #-}
-        doReseed bs = CRandT $ do
+  getCRandom  = wrap crandom
+  {-# INLINE getCRandom #-}
+  getBytes i = wrap (genBytes i)
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i e = wrap (genBytesWithEntropy i e)
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed bs = CRandT $ do
                         get >>= \g ->
                          case reseed bs g of
                             Right g' -> put g'
                             Left  x  -> throwError (fromGenError x)
-        {-# INLINE doReseed #-}
+  {-# INLINE doReseed #-}
 
 instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandomR e (CRandT g e m) where
-        getCRandomR = wrap . crandomR
-        {-# INLINE getCRandomR #-}
+  getCRandomR = wrap . crandomR
+  {-# INLINE getCRandomR #-}
 
 instance Error GenError where
-        noMsg = GenErrorOther "noMsg"
-        strMsg = GenErrorOther
+  noMsg = GenErrorOther "noMsg"
+  strMsg = GenErrorOther
 
 base2Log :: Integer -> Integer
 base2Log i
-        | i >= setBit 0 64 = 64 + base2Log (i `shiftR` 64)
-        | i >= setBit 0 32 = 32 + base2Log (i `shiftR` 32)
-        | i >= setBit 0 16 = 16 + base2Log (i `shiftR` 16)
-        | i >= setBit 0 8  = 8  + base2Log (i `shiftR` 8)
-        | i >= setBit 0 0  = 1  + base2Log (i `shiftR` 1)
-        | otherwise        = 0
+  | i >= setBit 0 64 = 64 + base2Log (i `shiftR` 64)
+  | i >= setBit 0 32 = 32 + base2Log (i `shiftR` 32)
+  | i >= setBit 0 16 = 16 + base2Log (i `shiftR` 16)
+  | i >= setBit 0 8  = 8  + base2Log (i `shiftR` 8)
+  | i >= setBit 0 0  = 1  + base2Log (i `shiftR` 1)
+  | otherwise        = 0
 
 bs2i :: B.ByteString -> Integer
 bs2i bs = B.foldl' (\i b -> (i `shiftL` 8) + fromIntegral b) 0 bs
