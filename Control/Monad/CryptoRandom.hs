@@ -373,6 +373,34 @@ instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRand
   getCRandomR = wrap . crandomR
   {-# INLINE getCRandomR #-}
 
+instance MonadCRandomR e m => MonadCRandomR e (Lazy.StateT s m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance MonadCRandomR e m => MonadCRandomR e (Strict.StateT s m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Lazy.WriterT w m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Strict.WriterT w m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance MonadCRandomR e m => MonadCRandomR e (ReaderT r m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Lazy.RWST r w s m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
+instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Strict.RWST r w s m) where
+  getCRandomR = lift . getCRandomR
+  {-# INLINE getCRandomR #-}
+
 instance Error GenError where
   noMsg = GenErrorOther "noMsg"
   strMsg = GenErrorOther
