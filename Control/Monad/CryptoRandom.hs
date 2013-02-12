@@ -34,8 +34,11 @@ import Control.Monad.Error
 import Control.Monad.IO.Class
 import Control.Monad.Identity
 import Control.Monad.Reader.Class
-import Control.Monad.State
+import Control.Monad.State.Lazy as Lazy
+import Control.Monad.State.Strict as Strict
 import Control.Monad.Writer.Class
+import Control.Monad.Writer.Lazy as Lazy
+import Control.Monad.Writer.Strict as Strict
 import Crypto.Random (CryptoRandomGen(..), GenError(..))
 import Data.Bits (xor, setBit, shiftR, shiftL, (.&.))
 import Data.Int
@@ -48,10 +51,50 @@ import qualified Data.ByteString as B
 -- random values (or fail with a 'GenError').  It is suggested
 -- you use the 'CRandT' transformer in your monad stack.
 class (ContainsGenError e, MonadError e m) => MonadCRandom e m where
-        getCRandom   :: CRandom a => m a
-        getBytes     :: Int -> m B.ByteString
-        getBytesWithEntropy :: Int -> B.ByteString -> m B.ByteString
-        doReseed :: B.ByteString -> m ()
+  getCRandom   :: CRandom a => m a
+  getBytes     :: Int -> m B.ByteString
+  getBytesWithEntropy :: Int -> B.ByteString -> m B.ByteString
+  doReseed :: B.ByteString -> m ()
+
+instance MonadCRandom e m => MonadCRandom e (Lazy.StateT s m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance MonadCRandom e m => MonadCRandom e (Strict.StateT s m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Strict.WriterT w m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Lazy.WriterT w m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
 
 newGenCRand :: (CryptoRandomGen g, MonadCRandom GenError m, Functor m) => m g
 newGenCRand = go 0
@@ -210,7 +253,7 @@ wrap f = CRandT $ do
 {-# INLINE wrap #-}
 
 -- |CRandT is the transformer suggested for MonadCRandom.
-newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
+newtype CRandT g e m a = CRandT { unCRandT :: Lazy.StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
 
 instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
   pure = return
@@ -265,7 +308,7 @@ instance (MonadCont m, Error e) => MonadCont (CRandT g e m) where
 type CRand g e = CRandT g e Identity
 
 runCRandT :: ContainsGenError e => CRandT g e m a -> g -> m (Either e (a,g))
-runCRandT m g = runErrorT . flip runStateT g . unCRandT $ m
+runCRandT m g = runErrorT . flip Lazy.runStateT g . unCRandT $ m
 {-# INLINE runCRandT #-}
 
 evalCRandT :: (ContainsGenError e, Monad m) => CRandT g e m a -> g -> m (Either e a)
