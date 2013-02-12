@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts
-  , GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
+  , GeneralizedNewtypeDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 {-|
   Maintainer: Thomas.DuBuisson@gmail.com
   Stability: beta
@@ -194,6 +194,10 @@ instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
 
 instance (Error e) => MonadTrans (CRandT g e) where
         lift = CRandT . lift . lift
+
+instance (MonadState s m, Error e) => MonadState s (CRandT g e m) where
+  get = lift get
+  put = lift . put
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
