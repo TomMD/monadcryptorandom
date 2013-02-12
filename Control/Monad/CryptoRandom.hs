@@ -29,6 +29,7 @@ module Control.Monad.CryptoRandom
 import Control.Applicative
 import Control.Arrow (right, left)
 import Control.Monad (liftM)
+import Control.Monad.Cont.Class
 import Control.Monad.Error
 import Control.Monad.IO.Class
 import Control.Monad.Identity
@@ -240,6 +241,10 @@ instance (MonadWriter w m, Error e) => MonadWriter w (CRandT g e m) where
   {-# INLINE listen #-}
   pass = CRandT . pass . unCRandT
   {-# INLINE pass #-}
+
+instance (MonadCont m, Error e) => MonadCont (CRandT g e m) where
+  callCC f = CRandT $ callCC $ \amb -> unCRandT $ f (CRandT . amb)
+  {-# INLINE callCC #-}
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
