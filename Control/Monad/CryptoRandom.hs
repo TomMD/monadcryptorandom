@@ -105,60 +105,80 @@ class CRandomR a where
                 Right (a,g') -> a : crandomRs r g'
 
 instance CRandomR Integer where
-   crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Int where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Int where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Word8 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Word8 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Word16 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Word16 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Word32 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Word32 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Word64 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Word64 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Int8 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Int8 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Int16 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Int16 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Int32 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
 
 instance CRandomR Int32 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 instance CRandom Int64 where
-    crandom = crandomR (minBound, maxBound)
+  crandom = crandomR (minBound, maxBound)
+  {-# INLINE crandom #-}
+
 instance CRandomR Int64 where
-    crandomR = crandomR_Num
+  crandomR = crandomR_Num
+  {-# INLINE crandomR #-}
 
 crandomR_Num :: (Integral a, CryptoRandomGen g) => (a,a) -> g -> Either GenError (a,g)
 crandomR_Num (low, high) g
@@ -186,29 +206,40 @@ wrap f = CRandT $ do
         case f g of
                 Right (a,g') -> put g' >> return a
                 Left x -> throwError (fromGenError x)
+{-# INLINE wrap #-}
 
 -- |CRandT is the transformer suggested for MonadCRandom.
 newtype CRandT g e m a = CRandT { unCRandT :: StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
 
 instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
   pure = return
+  {-# INLINE pure #-}
   (<*>) = ap
+  {-# INLINE (<*>) #-}
 
 instance (Error e) => MonadTrans (CRandT g e) where
-        lift = CRandT . lift . lift
+  lift = CRandT . lift . lift
+  {-# INLINE lift #-}
 
 instance (MonadState s m, Error e) => MonadState s (CRandT g e m) where
   get = lift get
+  {-# INLINE get #-}
   put = lift . put
+  {-# INLINE put #-}
 
 instance (MonadReader r m, Error e) => MonadReader r (CRandT g e m) where
   ask = lift ask
+  {-# INLINE ask #-}
   local f = CRandT . local f . unCRandT
+  {-# INLINE local #-}
 
 instance (MonadWriter w m, Error e) => MonadWriter w (CRandT g e m) where
   tell = lift . tell
+  {-# INLINE tell #-}
   listen = CRandT . listen . unCRandT
+  {-# INLINE listen #-}
   pass = CRandT . pass . unCRandT
+  {-# INLINE pass #-}
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
@@ -230,28 +261,37 @@ type CRand g e = CRandT g e Identity
 
 runCRandT :: ContainsGenError e => CRandT g e m a -> g -> m (Either e (a,g))
 runCRandT m g = runErrorT . flip runStateT g . unCRandT $ m
+{-# INLINE runCRandT #-}
 
 evalCRandT :: (ContainsGenError e, Monad m) => CRandT g e m a -> g -> m (Either e a)
 evalCRandT m g = liftM (right fst) (runCRandT m g)
+{-# INLINE evalCRandT #-}
 
 runCRand :: CRand g GenError a -> g -> Either GenError (a, g)
 runCRand m = runIdentity . runCRandT m
+{-# INLINE runCRand #-}
 
 evalCRand :: CRand g GenError a -> g -> Either GenError a
 evalCRand m = runIdentity . evalCRandT m
+{-# INLINE evalCRand #-}
 
 instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandom e (CRandT g e m) where
         getCRandom  = wrap crandom
+        {-# INLINE getCRandom #-}
         getBytes i = wrap (genBytes i)
+        {-# INLINE getBytes #-}
         getBytesWithEntropy i e = wrap (genBytesWithEntropy i e)
+        {-# INLINE getBytesWithEntropy #-}
         doReseed bs = CRandT $ do
                         get >>= \g ->
                          case reseed bs g of
                             Right g' -> put g'
                             Left  x  -> throwError (fromGenError x)
+        {-# INLINE doReseed #-}
 
 instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandomR e (CRandT g e m) where
         getCRandomR = wrap . crandomR
+        {-# INLINE getCRandomR #-}
 
 instance Error GenError where
         noMsg = GenErrorOther "noMsg"
@@ -269,4 +309,3 @@ base2Log i
 bs2i :: B.ByteString -> Integer
 bs2i bs = B.foldl' (\i b -> (i `shiftL` 8) + fromIntegral b) 0 bs
 {-# INLINE bs2i #-}
-
