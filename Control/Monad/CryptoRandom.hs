@@ -29,11 +29,13 @@ module Control.Monad.CryptoRandom
 import Control.Applicative
 import Control.Arrow (right, left)
 import Control.Monad (liftM)
-import Control.Monad.Cont.Class
+import Control.Monad.Cont
 import Control.Monad.Error
 import Control.Monad.IO.Class
 import Control.Monad.Identity
-import Control.Monad.Reader.Class
+import Control.Monad.Reader
+import Control.Monad.RWS.Lazy as Lazy
+import Control.Monad.RWS.Strict as Strict
 import Control.Monad.State.Lazy as Lazy
 import Control.Monad.State.Strict as Strict
 import Control.Monad.Writer.Class
@@ -87,6 +89,36 @@ instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Strict.WriterT w m) whe
   {-# INLINE doReseed #-}
 
 instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Lazy.WriterT w m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance MonadCRandom e m => MonadCRandom e (ReaderT r m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Strict.RWST r w s m) where
+  getCRandom = lift getCRandom
+  {-# INLINE getCRandom #-}
+  getBytes = lift . getBytes
+  {-# INLINE getBytes #-}
+  getBytesWithEntropy i = lift . getBytesWithEntropy i
+  {-# INLINE getBytesWithEntropy #-}
+  doReseed = lift . doReseed
+  {-# INLINE doReseed #-}
+
+instance (Monoid w, MonadCRandom e m) => MonadCRandom e (Lazy.RWST r w s m) where
   getCRandom = lift getCRandom
   {-# INLINE getCRandom #-}
   getBytes = lift . getBytes
