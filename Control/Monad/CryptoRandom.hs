@@ -27,7 +27,7 @@ module Control.Monad.CryptoRandom
   ) where
 
 import Control.Applicative
-import Control.Arrow (right, left)
+import Control.Arrow (right, left, first)
 import Control.Monad (liftM)
 import Control.Monad.Cont
 import Control.Monad.Error
@@ -255,6 +255,9 @@ instance CRandom Int64 where
 instance CRandomR Int64 where
   crandomR = crandomR_Num
   {-# INLINE crandomR #-}
+
+instance CRandom Bool where
+  crandom g = first (toEnum . fromIntegral) `fmap` crandomR (0::Word8,1) g
 
 crandomR_Num :: (Integral a, CryptoRandomGen g) => (a,a) -> g -> Either GenError (a,g)
 crandomR_Num (low, high) g
