@@ -47,6 +47,7 @@ import Data.Int
 import Data.List (foldl')
 import Data.Word
 import Data.Proxy
+import Data.Tagged
 import qualified Data.ByteString as B
 
 -- |@MonadCRandom m@ represents a monad that can produce
