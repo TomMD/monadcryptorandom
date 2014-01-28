@@ -16,7 +16,7 @@ module Control.Monad.CryptoRandom
   , MonadCRandom(..)
   , MonadCRandomR(..)
   , ContainsGenError(..)
-  , CRandT
+  , CRandT(..)
   , CRand
   , runCRandT
   , evalCRandT
@@ -351,7 +351,7 @@ evalCRandT :: (ContainsGenError e, Monad m) => CRandT g e m a -> g -> m (Either 
 evalCRandT m g = liftM (right fst) (runCRandT m g)
 {-# INLINE evalCRandT #-}
 
-runCRand :: CRand g GenError a -> g -> Either GenError (a, g)
+runCRand :: (ContainsGenError e) => CRand g e a -> g -> Either e (a, g)
 runCRand m = runIdentity . runCRandT m
 {-# INLINE runCRand #-}
 
