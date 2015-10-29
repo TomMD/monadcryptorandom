@@ -23,6 +23,8 @@ module Control.Monad.CryptoRandom
   , runCRand
   , evalCRand
   , newGenCRand
+  , liftCRand
+  , liftCRandT
   , module Crypto.Random
   ) where
 
@@ -30,7 +32,7 @@ import Control.Applicative
 import Control.Arrow (right, left, first)
 import Control.Monad (liftM)
 import Control.Monad.Cont
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Identity
 import Control.Monad.Reader
@@ -280,7 +282,7 @@ crandomR_Num (low, high) g
       in if res > fromIntegral high then go g' else Right (fromIntegral res, g')
 {-# INLINE crandomR_Num #-}
 
-wrap :: (Monad m, ContainsGenError e, Error e) => (g -> Either GenError (a,g)) -> CRandT g e m a
+wrap :: (Monad m, ContainsGenError e) => (g -> Either GenError (a,g)) -> CRandT g e m a
 wrap f = CRandT $ do
   g <- get
   case f g of
@@ -288,32 +290,36 @@ wrap f = CRandT $ do
     Left x -> throwError (fromGenError x)
 {-# INLINE wrap #-}
 
+liftCRand :: (g -> Either e (a, g)) -> CRand g e a
+liftCRand f = CRandT $ Lazy.StateT $ (\g -> ExceptT $ Identity $ f g)
+{-# INLINE liftCRand #-}
+
+liftCRandT :: (Monad m) => (g -> Either e (a, g)) -> CRandT g e m a
+liftCRandT f = CRandT $ Lazy.StateT $ (\g -> ExceptT $ return $ f g)
+{-# INLINE liftCRandT #-}
+
 -- |CRandT is the transformer suggested for MonadCRandom.
-newtype CRandT g e m a = CRandT { unCRandT :: Lazy.StateT g (ErrorT e m) a } deriving (MonadError e, Monad, MonadIO, Functor, MonadFix)
+newtype CRandT g e m a = CRandT { unCRandT :: Lazy.StateT g (ExceptT e m) a } 
+  deriving (Functor, Applicative, Monad, MonadIO, MonadError e, MonadFix)
 
-instance (Functor m,Monad m,Error e) => Applicative (CRandT g e m) where
-  pure = return
-  {-# INLINE pure #-}
-  (<*>) = ap
-  {-# INLINE (<*>) #-}
 
-instance (Error e) => MonadTrans (CRandT g e) where
+instance MonadTrans (CRandT g e) where
   lift = CRandT . lift . lift
   {-# INLINE lift #-}
 
-instance (MonadState s m, Error e) => MonadState s (CRandT g e m) where
+instance (MonadState s m) => MonadState s (CRandT g e m) where
   get = lift get
   {-# INLINE get #-}
   put = lift . put
   {-# INLINE put #-}
 
-instance (MonadReader r m, Error e) => MonadReader r (CRandT g e m) where
+instance (MonadReader r m) => MonadReader r (CRandT g e m) where
   ask = lift ask
   {-# INLINE ask #-}
   local f = CRandT . local f . unCRandT
   {-# INLINE local #-}
 
-instance (MonadWriter w m, Error e) => MonadWriter w (CRandT g e m) where
+instance (MonadWriter w m) => MonadWriter w (CRandT g e m) where
   tell = lift . tell
   {-# INLINE tell #-}
   listen = CRandT . listen . unCRandT
@@ -321,7 +327,7 @@ instance (MonadWriter w m, Error e) => MonadWriter w (CRandT g e m) where
   pass = CRandT . pass . unCRandT
   {-# INLINE pass #-}
 
-instance (MonadCont m, Error e) => MonadCont (CRandT g e m) where
+instance (MonadCont m) => MonadCont (CRandT g e m) where
   callCC f = CRandT $ callCC $ \amb -> unCRandT $ f (CRandT . amb)
   {-# INLINE callCC #-}
 
@@ -344,7 +350,7 @@ instance (MonadCont m, Error e) => MonadCont (CRandT g e m) where
 type CRand g e = CRandT g e Identity
 
 runCRandT :: ContainsGenError e => CRandT g e m a -> g -> m (Either e (a,g))
-runCRandT m g = runErrorT . flip Lazy.runStateT g . unCRandT $ m
+runCRandT m g = runExceptT . flip Lazy.runStateT g . unCRandT $ m
 {-# INLINE runCRandT #-}
 
 evalCRandT :: (ContainsGenError e, Monad m) => CRandT g e m a -> g -> m (Either e a)
@@ -359,7 +365,7 @@ evalCRand :: CRand g GenError a -> g -> Either GenError a
 evalCRand m = runIdentity . evalCRandT m
 {-# INLINE evalCRand #-}
 
-instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandom e (CRandT g e m) where
+instance (ContainsGenError e, Monad m, CryptoRandomGen g) => MonadCRandom e (CRandT g e m) where
   getCRandom  = wrap crandom
   {-# INLINE getCRandom #-}
   getBytes i = wrap (genBytes i)
@@ -373,7 +379,7 @@ instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRand
                             Left  x  -> throwError (fromGenError x)
   {-# INLINE doReseed #-}
 
-instance (ContainsGenError e, Error e, Monad m, CryptoRandomGen g) => MonadCRandomR e (CRandT g e m) where
+instance (ContainsGenError e, Monad m, CryptoRandomGen g) => MonadCRandomR e (CRandT g e m) where
   getCRandomR = wrap . crandomR
   {-# INLINE getCRandomR #-}
 
@@ -404,10 +410,6 @@ instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Lazy.RWST r w s m) wh
 instance (MonadCRandomR e m, Monoid w) => MonadCRandomR e (Strict.RWST r w s m) where
   getCRandomR = lift . getCRandomR
   {-# INLINE getCRandomR #-}
-
-instance Error GenError where
-  noMsg = GenErrorOther "noMsg"
-  strMsg = GenErrorOther
 
 base2Log :: Integer -> Integer
 base2Log i
