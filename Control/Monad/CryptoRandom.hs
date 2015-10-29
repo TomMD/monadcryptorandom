@@ -32,7 +32,8 @@ import Control.Applicative
 import Control.Arrow (right, left, first)
 import Control.Monad (liftM)
 import Control.Monad.Cont
-import Control.Monad.Except
+import Control.Monad.Trans.Except
+import Control.Monad.Error.Class
 import Control.Monad.IO.Class
 import Control.Monad.Identity
 import Control.Monad.Reader

@@ -19,7 +19,10 @@ extra-source-files:
 Library
   Build-Depends: base == 4.*,
                  bytestring >= 0.9 && < 0.11,
-                 mtl >= 2.2.1, crypto-api >= 0.2, transformers >= 0.2,
+                 crypto-api >= 0.2,
+                 transformers >= 0.2,
+                 mtl >= 2.0 && < 2.3,
+                 transformers-compat >= 0.3,
                  tagged >= 0.2
   ghc-options:
   hs-source-dirs:
