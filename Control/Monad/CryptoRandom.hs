@@ -337,16 +337,17 @@ instance (MonadCont m) => MonadCont (CRandT g e m) where
 -- below for a simple use of 'newGenIO' (from "crypto-api"),
 -- 'getCRandom', 'getBytes', and 'runCRandom'.
 --
--- @getRandPair = do
+-- @
+-- getRandPair = do
 --   int <- getCRandom
 --   bytes <- getBytes 100
 --   return (int, bytes)
 --
---  func = do
+-- func = do
 --   g <- newGenIO
 --   case runCRand getRandPair g of
---       Right ((int,bytes), g') -> useRandomVals (int,bytes)
---       Left x -> handleGenError x
+--     Right ((int,bytes), g') -> useRandomVals (int,bytes)
+--     Left x -> handleGenError x
 -- @
 type CRand g e = CRandT g e Identity
 
