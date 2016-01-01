@@ -31,6 +31,7 @@ module Control.Monad.CryptoRandom
 import Control.Applicative
 import Control.Arrow (right, left, first)
 import Control.Monad (liftM)
+import qualified Control.Monad.Catch as C (MonadThrow(..), MonadCatch(..))
 import Control.Monad.Cont
 import Control.Monad.Trans.Except
 import Control.Monad.Error.Class
@@ -331,6 +332,18 @@ instance (MonadWriter w m) => MonadWriter w (CRandT g e m) where
 instance (MonadCont m) => MonadCont (CRandT g e m) where
   callCC f = CRandT $ callCC $ \amb -> unCRandT $ f (CRandT . amb)
   {-# INLINE callCC #-}
+
+-- | Throws exceptions into the base monad.
+--
+-- @since 0.7.1
+instance C.MonadThrow m => C.MonadThrow (CRandT g e m) where
+    throwM = CRandT . C.throwM
+
+-- | Catches exceptions from the base monad.
+--
+-- @since 0.7.1
+instance C.MonadCatch m => C.MonadCatch (CRandT g e m) where
+  catch (CRandT m) f = CRandT $ C.catch m (unCRandT . f)
 
 -- |Simple users of generators can use CRand for
 -- quick and easy generation of randoms.  See
