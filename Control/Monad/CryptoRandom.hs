@@ -32,17 +32,18 @@ import Control.Applicative
 import Control.Arrow (right, left, first)
 import Control.Monad (liftM)
 import qualified Control.Monad.Catch as C (MonadThrow(..), MonadCatch(..))
-import Control.Monad.Cont
-import Control.Monad.Trans.Except
-import Control.Monad.Error.Class
-import Control.Monad.IO.Class
-import Control.Monad.Identity
-import Control.Monad.Reader
+import Control.Monad.Cont (MonadCont(..))
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
+import Control.Monad.Error.Class (MonadError, throwError)
+import Control.Monad.Fix (MonadFix)
+import Control.Monad.IO.Class ()
+import Control.Monad.Identity (Identity(..))
+import Control.Monad.Reader (ReaderT)
 import Control.Monad.RWS.Lazy as Lazy
 import Control.Monad.RWS.Strict as Strict
 import Control.Monad.State.Lazy as Lazy
 import Control.Monad.State.Strict as Strict
-import Control.Monad.Writer.Class
+import Control.Monad.Writer.Class ()
 import Control.Monad.Writer.Lazy as Lazy
 import Control.Monad.Writer.Strict as Strict
 import Crypto.Random (CryptoRandomGen(..), GenError(..))
